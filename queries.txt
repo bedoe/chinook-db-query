@@ -1,0 +1,85 @@
+------------------[QUERY 1]-----------------------
+/* QUERY 1 -- Purchases By Country*/
+SELECT 
+  c.Country,
+  ROUND(
+    100 * SUM(i.total)/(
+      SELECT 
+        SUM(total) 
+      FROM 
+        Invoice
+    )
+  ) as percentage_purchases 
+FROM 
+  Customer c 
+  JOIN Invoice i ON c.CustomerId = i.CustomerId 
+GROUP BY 
+  c.Country 
+ORDER BY 
+  percentage_purchases DESC
+
+--------------------[QUERY  2]----------------
+
+/* Number of sales by genre */
+SELECT 
+  g.Name, 
+  SUM(il.Quantity) num_orders 
+FROM 
+  Genre g 
+  JOIN Track t ON t.GenreId = g.GenreId 
+  JOIN InvoiceLine il ON il.TrackId = t.TrackId 
+GROUP BY 
+  g.Name 
+ORDER BY 
+  num_orders DESC
+
+------------------[QUERY 3]-----------------
+
+/*  number of sales by artist name  */
+SELECT 
+  a.Name, 
+  SUM(il.Quantity) num_orders 
+FROM 
+  Artist a 
+  JOIN Album al ON al.ArtistId = a.ArtistId 
+  JOIN Track t ON t.AlbumId = al.AlbumId 
+  JOIN InvoiceLine il ON il.TrackId = t.TrackId 
+GROUP BY 
+  a.Name 
+ORDER BY 
+  num_orders DESC
+
+----------------[QEURY 4]--------------------
+
+/* Sales by month, compared to mean */
+SELECT 
+  g.Name, 
+  strftime('%m', i.InvoiceDate) date_of_purchase, 
+  SUM(il.UnitPrice * il.Quantity) total, 
+  (
+    SELECT 
+      AVG(TOTAL) 
+    FROM 
+      (
+        SELECT 
+          strftime('%m', i.InvoiceDate) date_purchasing, 
+          SUM(il.UnitPrice * il.Quantity) as TOTAL 
+        FROM 
+          InvoiceLine il 
+          JOIN Track t ON t.TrackId = il.TrackId 
+          JOIN Genre g ON g.GenreId = t.GenreId 
+          AND g.Name = 'Rock' 
+          JOIN Invoice i ON i.InvoiceId = il.InvoiceId 
+        GROUP BY 
+          1
+      )
+  ) as avg_total 
+FROM 
+  Genre g 
+  JOIN Track t ON g.GenreId = t.GenreId 
+  AND g.Name = 'Rock' 
+  JOIN InvoiceLine il ON il.TrackId = t.TrackId 
+  JOIN Invoice i ON il.InvoiceId = i.InvoiceId 
+GROUP BY 
+  g.Name, 
+  2
